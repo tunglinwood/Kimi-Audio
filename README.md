@@ -124,7 +124,56 @@ The below is the overall performance:
 
 
 
+## Use Docker
 
+> Please confirm that Kimi-Audio-7B-Instruct is downloaded either from [modelscope](https://modelscope.cn/models/moonshotai/Kimi-Audio-7B-Instruct) or [huggingface](https://huggingface.co/moonshotai/Kimi-Audio-7B-Instruct)
+
+1. git clone Kimi this repo with `--recurse-submodules` added as options. Otherwise, submodule will be missing when inference.
+
+```bash
+git clone --recurse-submodules https://github.com/MoonshotAI/Kimi-Audio.git
+cd Kimi-Audio
+```
+
+2. Build image using `Dockerfile`.
+
+```bash
+docker build -t kimi-audio .
+```
+
+3. After building is done, run docker instance and ship with `gpus` all avaible to docker container.
+
+```bash
+docker run --name kimi-audio-docker -it --rm -d --gpus=all -v .:/app/ -v path/to/your/model/moonshotai/:/models/ kimi-audio sh
+```
+
+4. Modify model path of `infer.py` to match that in docker container.
+
+```python
+    model = KimiAudio(
+        model_path="/models/Kimi-Audio-7B-Instruct",
+        load_detokenizer=True,
+        ) # model path in docker container
+```
+
+5. (Optional) You can optionally execute commands below just to check if everything is in the right place.
+
+```bash
+docker exec -it kimi-audio-docker ls
+docker exec -it kimi-audio-docker cat ./infer.py
+docker exec -it kimi-audio-docker ls /models/Kimi-Audio-7B-Instruct/
+
+```
+
+6. Inference with examples.
+
+```bash
+docker exec -it kimi-audio-docker python ./infer.py
+```
+
+> If anything undesired happeneded and you wanted to remove the container you can just stop the container and it will be automatically removed.
+> `docker stop kimi-audio-docker`
+> And If you want the container to be run again, just execute step 3 again.
 
 
 
