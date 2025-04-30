@@ -20,6 +20,8 @@ We present Kimi-Audio, an open-source audio foundation model excelling in **audi
 - [Introduction](#introduction)
 - [Architecture Overview](#architecture-overview)
 - [Quick Start](#quick-start)
+  - [1. Inference with Docker](#1-inference-with-docker)
+  - [2. Inference with Python](#2-inference-with-python)
 - [Evaluation](#evaluation)
   - [Speech Recognition](#automatic-speech-recognition-asr)
   - [Audio Understanding](#audio-understanding)
@@ -59,6 +61,34 @@ Kimi-Audio consists of three main components:
 
 
 ## Quick Start
+
+### 1. Inference with Docker 
+
+We recommend that you build a Docker image to run the inference. You can construct the image using the `docker build` command.
+```bash
+git clone https://github.com/MoonshotAI/Kimi-Audio
+git submodule update --init
+cd Kimi-Audio
+docker build -t kimi-audio:v0.1 .
+```
+> You may refer to the [Dockerfile](./Dockerfile) in case of any environment issues.
+
+Alternatively, You can also use our pre-built image:
+```bash
+docker pull moonshotai/kimi-audio:v0.1
+```
+
+Run docker instance with `--gpus=all` to enable GPUs support to docker container.
+```bash
+docker run --name kimi-audio-docker -it --rm -d --gpus=all -v /path/to/cloned/repo:/app kimi-audio sh
+```
+
+Inference with examples.
+```bash
+docker exec -it kimi-audio-docker python ./infer.py
+```
+
+### 2. Inference with Python
 
 This example demonstrates basic usage for generating text from audio (ASR) and generating both text and speech in a conversational turn.
 
@@ -121,60 +151,6 @@ The below is the overall performance:
 <p align="center">
     <img src="assets/kimia_radar_chart.png" width="70%"/>
 <p>
-
-
-
-## Use Docker
-
-> Please confirm that Kimi-Audio-7B-Instruct is downloaded either from [modelscope](https://modelscope.cn/models/moonshotai/Kimi-Audio-7B-Instruct) or [huggingface](https://huggingface.co/moonshotai/Kimi-Audio-7B-Instruct)
-
-1. git clone Kimi this repo with `--recurse-submodules` added as options. Otherwise, submodule will be missing when inference.
-
-```bash
-git clone --recurse-submodules https://github.com/MoonshotAI/Kimi-Audio.git
-cd Kimi-Audio
-```
-
-2. Build image using `Dockerfile`.
-
-```bash
-docker build -t kimi-audio .
-```
-
-3. After building is done, run docker instance and ship with `gpus` all avaible to docker container.
-
-```bash
-docker run --name kimi-audio-docker -it --rm -d --gpus=all -v .:/app/ -v path/to/your/model/moonshotai/:/models/ kimi-audio sh
-```
-
-4. Modify model path of `infer.py` to match that in docker container.
-
-```python
-    model = KimiAudio(
-        model_path="/models/Kimi-Audio-7B-Instruct",
-        load_detokenizer=True,
-        ) # model path in docker container
-```
-
-5. (Optional) You can optionally execute commands below just to check if everything is in the right place.
-
-```bash
-docker exec -it kimi-audio-docker ls
-docker exec -it kimi-audio-docker cat ./infer.py
-docker exec -it kimi-audio-docker ls /models/Kimi-Audio-7B-Instruct/
-
-```
-
-6. Inference with examples.
-
-```bash
-docker exec -it kimi-audio-docker python ./infer.py
-```
-
-> If anything undesired happeneded and you wanted to remove the container you can just stop the container and it will be automatically removed.
-> `docker stop kimi-audio-docker`
-> And If you want the container to be run again, just execute step 3 again.
-
 
 
 Here are performances on different benchmarks, you can easily reproduce the **our results and baselines** by our [Kimi-Audio-Evalkit](https://github.com/MoonshotAI/Kimi-Audio-Evalkit) (also see [**Evaluation Toolkit**](#evaluation-toolkit)):
