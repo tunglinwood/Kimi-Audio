@@ -30,10 +30,11 @@ class KimiAudio(object):
         self.alm = self.alm.to(torch.cuda.current_device())
 
         model_config = self.alm.config
+        self.kimia_text_audiodelaytokens = model_config.kimia_mimo_audiodelaytokens
         self.kimia_token_offset = model_config.kimia_token_offset
 
         self.prompt_manager = KimiAPromptManager(
-            model_path=cache_path, kimia_token_offset=self.kimia_token_offset
+            model_path=cache_path, kimia_token_offset=self.kimia_token_offset, kimia_text_audiodelaytokens=self.kimia_text_audiodelaytokens
         )
 
         if load_detokenizer:
@@ -45,7 +46,6 @@ class KimiAudio(object):
             self.detokenizer = None
 
         self.extra_tokens = self.prompt_manager.extra_tokens
-        self.kimia_text_audiodelaytokens = 6
         self.eod_ids = [self.extra_tokens.msg_end, self.extra_tokens.media_end]
 
     @torch.inference_mode()
@@ -229,7 +229,7 @@ class KimiAudio(object):
 
         history = self.prompt_manager.get_prompt(chats, output_type=output_type)
 
-        audio_input_ids, text_input_ids, is_continuous_mask = history.to_tensor()
+        audio_input_ids, text_input_ids, is_continuous_mask, _, _ = history.to_tensor()
         audio_features = history.continuous_feature
 
         generated_wav_tokens = []

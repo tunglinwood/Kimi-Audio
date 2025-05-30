@@ -10,6 +10,7 @@ Kimi-Audio-7B <a href="https://huggingface.co/moonshotai/Kimi-Audio-7B">🤗</a>
 We present Kimi-Audio, an open-source audio foundation model excelling in **audio understanding, generation, and conversation**. This repository contains the official implementation, models, and evaluation toolkit for Kimi-Audio.
 
 ## 🔥🔥🔥 News!!
+* May 29, 2025: 👋 We release a finetuning example of [Kimi-Audio-7B](https://github.com/MoonshotAI/Kimi-Audio/tree/master/finetune_codes).
 * April 27, 2025: 👋 We release pretrained model weights of [Kimi-Audio-7B](https://huggingface.co/moonshotai/Kimi-Audio-7B).
 * April 25, 2025: 👋 We release the inference code and model weights of [Kimi-Audio-7B-Instruct](https://huggingface.co/moonshotai/Kimi-Audio-7B-Instruct).
 * April 25, 2025: 👋 We release the audio evaluation toolkit [Kimi-Audio-Evalkit](https://github.com/MoonshotAI/Kimi-Audio-Evalkit). We can easily reproduce the **our results and baselines** by this toolkit!
@@ -27,7 +28,9 @@ We present Kimi-Audio, an open-source audio foundation model excelling in **audi
   - [Audio Understanding](#audio-understanding)
   - [Audio-to-Text Chat](#audio-to-text-chat)
   - [Speech Conversation](#speech-conversation)
+- [Finetune](#finetune)
 - [Evaluation Toolkit](#evaluation-toolkit)
+- [Generation Testset](#generation-testset)
 - [License](#license)
 - [Acknowledgements](#acknowledgements)
 - [Citation](#citation)
@@ -37,12 +40,12 @@ We present Kimi-Audio, an open-source audio foundation model excelling in **audi
 
 Kimi-Audio is designed as a universal audio foundation model capable of handling a wide variety of audio processing tasks within a single unified framework. Key features include:
 
-*   **Universal Capabilities:** Handles diverse tasks like speech recognition (ASR), audio question answering (AQA), audio captioning (AAC), speech emotion recognition (SER), sound event/scene classification (SEC/ASC), and end-to-end speech conversation.
-*   **State-of-the-Art Performance:** Achieves SOTA results on numerous audio benchmarks (see [Evaluation](#evaluation) and the [Technical Report](https://arxiv.org/pdf/2504.18425)).
-*   **Large-Scale Pre-training:** Pre-trained on over 13 million hours of diverse audio data (speech, music, sounds) and text data, enabling robust audio reasoning and language understanding.
-*   **Novel Architecture:** Employs a hybrid audio input (continuous acoustic + discrete semantic tokens) and an LLM core with parallel heads for text and audio token generation.
-*   **Efficient Inference:** Features a chunk-wise streaming detokenizer based on flow matching for low-latency audio generation.
-*   **Open-Source:** We release the code, model checkpoints for both pretrain and instruction finetuning, and a comprehensive evaluation toolkit to foster community research and development.
+*   **Universal Capabilities:** Handle diverse tasks like automatic speech recognition (ASR), audio question answering (AQA), automatic audio captioning (AAC), speech emotion recognition (SER), sound event/scene classification (SEC/ASC), and end-to-end speech conversation.
+*   **State-of-the-Art Performance:** Achieve SOTA results on numerous audio benchmarks (see [Evaluation](#evaluation) and the [Technical Report](https://arxiv.org/pdf/2504.18425)).
+*   **Large-Scale Pre-training:** Pre-train on over 13 million hours of diverse audio data (speech, music, sounds) and text data, enabling robust audio reasoning and language understanding.
+*   **Novel Architecture:** Employ a hybrid audio input (continuous acoustic vectors + discrete semantic tokens) and an LLM core with parallel heads for text and audio token generation.
+*   **Efficient Inference:** Feature a chunk-wise streaming detokenizer based on flow matching for low-latency audio generation.
+*   **Open-Source:** Release the code and model checkpoints for both pre-training and instruction fine-tuning, and release a comprehensive evaluation toolkit to foster community research and development.
 
 ## Architecture Overview
 
@@ -58,7 +61,22 @@ Kimi-Audio consists of three main components:
 2.  **Audio LLM:** A transformer-based model (initialized from a pre-trained text LLM like Qwen 2.5 7B) with shared layers processing multimodal inputs, followed by parallel heads for autoregressively generating text tokens and discrete audio semantic tokens.
 3.  **Audio Detokenizer:** Converts the predicted discrete semantic audio tokens back into high-fidelity waveforms using a flow-matching model and a vocoder (BigVGAN), supporting chunk-wise streaming with a look-ahead mechanism for low latency.
 
+## Getting Started
 
+### Step1: Get the Code
+
+```bash
+git clone https://github.com/MoonshotAI/Kimi-Audio.git
+cd Kimi-Audio
+git submodule update --init --recursive
+pip install -r requirements.txt
+```
+
+Kimi‑Audio can now be installed directly via **pip**.
+```bash
+pip install torch
+pip install git+https://github.com/MoonshotAI/Kimi-Audio.git
+```
 
 ## Quick Start
 
@@ -138,9 +156,31 @@ wav_output, text_output = model.generate(messages_conversation, **sampling_param
 output_audio_path = "output_audio.wav"
 sf.write(output_audio_path, wav_output.detach().cpu().view(-1).numpy(), 24000) # Assuming 24kHz output
 print(f">>> Conversational Output Audio saved to: {output_audio_path}")
-print(">>> Conversational Output Text: ", text_output) # Expected output: "A."
+print(">>> Conversational Output Text: ", text_output) # Expected output: "当然可以，这很简单。一二三四五六七八九十。"
+
+# --- 5. Example 3: Audio-to-Audio/Text Conversation with Multiturn ---
+
+messages = [
+    {"role": "user", "message_type": "audio", "content": "test_audios/multiturn/case2/multiturn_q1.wav"},
+    # This is the first turn output of Kimi-Audio
+    {"role": "assistant", "message_type": "audio-text", "content": ["test_audios/multiturn/case2/multiturn_a1.wav", "当然可以，这很简单。一二三四五六七八九十。"]},
+    {"role": "user", "message_type": "audio", "content": "test_audios/multiturn/case2/multiturn_q2.wav"}
+]
+wav, text = model.generate(messages, **sampling_params, output_type="both")
+
+
+# Generate both audio and text output
+wav_output, text_output = model.generate(messages_conversation, **sampling_params, output_type="both")
+
+# Save the generated audio
+output_audio_path = "output_audio.wav"
+sf.write(output_audio_path, wav_output.detach().cpu().view(-1).numpy(), 24000) # Assuming 24kHz output
+print(f">>> Conversational Output Audio saved to: {output_audio_path}")
+print(">>> Conversational Output Text: ", text_output) # Expected output: "没问题，继续数下去就是十一十二十三十四十五十六十七十八十九二十。"
 
 print("Kimi-Audio inference examples complete.")
+
+
 ```
 
 ## Evaluation
@@ -613,7 +653,9 @@ Here are performances on different benchmarks, you can easily reproduce the **ou
   </tbody>
 </table>
 
+## Finetune
 
+We release the pre-trained model and the lightweight finetune codes. Please refer to the [finetune_codes/README.md](finetune_codes/README.md) for more details.
 
 ## Evaluation Toolkit
 
@@ -627,7 +669,9 @@ Key features:
 
 We encourage the community to use and contribute to this toolkit to foster more reliable and comparable benchmarking. Find it here: [Kimi-Audio-Evalkit](https://github.com/MoonshotAI/Kimi-Audio-Evalkit).
 
+## Generation Testset
 
+We collect and release [Kimi-Audio-Generation-Testset](https://huggingface.co/datasets/moonshotai/Kimi-Audio-GenTest), which is designed to benchmark and evaluate the conversational capabilities of audio-based dialogue models. It consists of a collection of audio files containing various instructions and conversational prompts. The primary goal is to assess a model's ability to generate not just relevant, but also appropriately styled audio responses. The language in dataset is Chinese.
 
 ## License
 
@@ -643,6 +687,7 @@ We would like to thank the following projects and individuals for their contribu
 * [Transformers](https://github.com/huggingface/transformers)
 * [BigVGAN](https://github.com/NVIDIA/BigVGAN)
 * [GLM-4-Voice](https://github.com/THUDM/GLM-4-Voice)
+* [Qwen](https://github.com/QwenLM/Qwen/tree/main)
 
 Thank you to all the open-source projects for their contributions to this project!
 
